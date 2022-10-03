@@ -54,8 +54,8 @@ int main(){
     #endif
 
     //Работа:
-        //Сортировка:
-    qsort(strings_adressed, numofstrings_computed + 1, sizeof(strinfo),(int(*) (const void *, const void *)) compar);
+        //Сортировка с начала:
+    qsort(strings_adressed, numofstrings_computed + 1, sizeof(strinfo),(int(*) (const void *, const void *)) forwardscompar);
     
     #ifdef NDEBUG
 
@@ -66,14 +66,42 @@ int main(){
     //Вывод: 
     fprintf(logfile, "\nLINE %d:  numofstring_computed = %d\n", __LINE__, numofstrings_computed);
 
-    outputinfile(logfile, filewritename, strings_adressed, numofstrings_computed);
+    outputinfile(logfile, filewritename, strings_adressed, numofstrings_computed, 1, nullptr);
 
     #else
 
-    outputinfile(nullptr, filewritename, strings_adressed, numofstrings_computed);
+    outputinfile(nullptr, filewritename, strings_adressed, numofstrings_computed, 1, nullptr);
 
     #endif
     
+    //Сортировка сзади:
+    qsort(strings_adressed, numofstrings_computed + 1, sizeof(strinfo), (int(*) (const void*, const void*))backwardscompar);
+
+    //Вывод в файл backwards sort`a:
+
+    #ifdef NDEBUG
+
+    fprintf(logfile, "LINE %d: BACKWARDS SORT:\n", __LINE__);
+    
+    outputinfile(logfile, filewritename, strings_adressed, numofstrings_computed, -1, nullptr);
+
+    #else 
+
+    outputinfile(nullptr, filewritename, strings_adressed, numofstrings_computed, -1, nullptr);
+
+    #endif
+
+    #ifdef NDEBUG
+
+
+    outputinfile(logfile, filewritename, strings_adressed, numofstrings_computed, 0, buffer);
+
+    #else
+
+    outputinfile(nullptr, filewritename, strings_adressed, numofstrings_computed, 0, buffer);
+
+    #endif
+
     #ifdef NDEBUG
 
     fclose(logfile);
