@@ -4,6 +4,8 @@
 #include <stat.h>
 #include <stdlib.h>
 #include <ctype.h>
+// #include "onegin.hpp"
+// #define NDEBUG
 
 struct strinfo{
     char* adress = nullptr;
@@ -11,7 +13,7 @@ struct strinfo{
 };
 
 
-int compar(strinfo* str1, strinfo* str2){
+int forwardscompar(strinfo* str1, strinfo* str2){
 
     // TODO: Refactor
 
@@ -36,7 +38,7 @@ char* readingfromfile(FILE* logfile, char* filereadname, long int* readedcount, 
         return nullptr;
     }
 
-    fprintf(logfile, "LINE %d:  numofstrings_readed = %d, size = %d\n", __LINE__, *numofstrings_readed, sizeof(numofstrings_readed));
+    fprintf(logfile, "LINE %d:  numofstrings_readed = %d, size = %lu\n", __LINE__, *numofstrings_readed, sizeof(numofstrings_readed));
 
     if(filereadname == nullptr){
         fprintf(logfile, "LINE %d:  (!) filereadname is nullptr!\n", __LINE__);
@@ -86,7 +88,7 @@ char* readingfromfile(FILE* logfile, char* filereadname, long int* readedcount, 
     }
     else {
         #ifdef NDEBUG
-        fprintf(logfile, "LINE %d:    \n(!)  filesize < 0\n", __FILE__);
+        fprintf(logfile, "LINE %d:    \n(!)  filesize < 0\n", __LINE__);
         #endif
         return nullptr;
     }
@@ -98,7 +100,7 @@ char* readingfromfile(FILE* logfile, char* filereadname, long int* readedcount, 
         //Ввод строк из файла:
 
     if((*readedcount = (int)fread(buffer, sizeof(char), (size_t)filesize, fr)) <= 0){ 
-        fprintf(logfile, "LINE: %d:  (!) Fail with fread, readedcount = %d\n", __FILE__, readedcount);
+        fprintf(logfile, "LINE: %d:  (!) Fail with fread, readedcount = %d\n", __LINE__, readedcount);
         return nullptr;
     }
 
@@ -149,7 +151,7 @@ strinfo* structsforming(FILE* logfile, char* buffer, long int readedcount, int n
     }
 
     if(numofstrings_computed == nullptr){
-        fprintf(logfile, "LINE %d:  (!) numofstrings_computed is nullptr!\n");
+        fprintf(logfile, "LINE %d:  (!) numofstrings_computed is nullptr!\n", __LINE__);
         return nullptr;
     }
 
@@ -166,7 +168,7 @@ strinfo* structsforming(FILE* logfile, char* buffer, long int readedcount, int n
 
     #ifdef NDEBUG
 
-    fprintf(logfile, "LINE %d:  buffer = %p == %s\n", __LINE__, *buffer, buffer);
+    fprintf(logfile, "LINE %d:  buffer = %p == %s\n", __LINE__, buffer, buffer);
     fprintf(logfile, "\n\nLINE %d:\n\ninfos[numofstrings_computed].adress:\n", __LINE__);
 
     #endif
@@ -209,8 +211,8 @@ strinfo* structsforming(FILE* logfile, char* buffer, long int readedcount, int n
 }
 
 
-void outputinfile(FILE* logfile, char* filewritename, strinfo* strings_adressed, int numofstrings_computed){
-
+void outputinfile(FILE* logfile, char* filewritename, strinfo* strings_adressed, int numofstrings_computed, int sort_direction, char* buffer){
+    //sort_direction == 1 <=> forward sort, sort_direction == -1 <=> backward sort, sort_direction == 0 <=> original text.
     #ifdef NDEBUG
 
     if(logfile == nullptr){
@@ -225,10 +227,80 @@ void outputinfile(FILE* logfile, char* filewritename, strinfo* strings_adressed,
         fprintf(logfile, "LINE %d:  (!) strings_adressed is nullptr!\n", __LINE__);
         return;
     }
-
+    if(sort_direction > 1 || sort_direction < -1){
+        fprintf(logfile, "LINE %d: (!) |sort_direction| != -1, sort_direction == %d\n", __LINE__, sort_direction);
+        return;
+    }
+    if(sort_direction == 0 && buffer == nullptr){
+        fprintf(logfile, "LINE %d: (!) sort_direction is 0 but buffer is nullptr!\n", __LINE__);
+        return;
+    }
+    fprintf(logfile, "LINE %d: sort_direction is %d\n", __LINE__, sort_direction);
     #endif
 
-    FILE* fw = fopen(filewritename, "w");
+    FILE* fw = nullptr;
+
+    if(sort_direction == 1) {
+        fw = fopen(filewritename, "w");
+
+        #ifdef NDEBUG
+
+        if(fw == nullptr){
+            fprintf(logfile, "LINE %d: (!) fw is nullptr!\n", __LINE__);
+            return;            
+        }
+
+        #endif
+
+        fprintf(fw, "\n\n               FORWARDS SORT:              \n\n");
+    }
+    else if(sort_direction == -1) {
+        fw = fopen(filewritename, "a");
+
+        #ifdef NDEBUG
+
+        if(fw == nullptr){
+            fprintf(logfile, "LINE %d: (!) fw is nullptr!\n", __LINE__);
+            return;            
+        }
+
+        #endif
+
+        fprintf(fw, "\n\n               BACKWARDS SORT:             \n\n");
+    }
+    else if(sort_direction == 0) {
+        fw = fopen(filewritename, "a");
+
+        #ifdef NDEBUG
+
+        if(fw == nullptr){
+            fprintf(logfile, "LINE %d: (!) fw is nullptr!\n", __LINE__);
+            return;            
+        }
+
+        #endif
+
+        fprintf(fw, "\n\n               ORIGINAL TEXT:             \n\n");
+        
+        #ifdef NDEBUG
+
+        fprintf(logfile, "\n\n               ORIGINAL TEXT:             \n\n");
+
+        #endif
+
+        for(int i = 0, j = 0; i < numofstrings_computed; j++, i++){
+            fprintf(fw, "%s\n", buffer + j);
+
+            #ifdef NDEBUG
+
+            fprintf(logfile, "%s\n", buffer + j);
+
+            #endif
+
+            while(buffer[j] != '\0') j++;
+        }
+        return;
+    }
 
     #ifdef NDEBUG
 
@@ -242,9 +314,45 @@ void outputinfile(FILE* logfile, char* filewritename, strinfo* strings_adressed,
     #endif
 
     for(int i = 0; i < numofstrings_computed; i++) {
+
+        #ifdef NDEBUG
+
+        fprintf(logfile, "%s\n", strings_adressed[i].adress);
+
+        #endif
+
+
         fputs(strings_adressed[i].adress, fw);
         fputc((int)'\n', fw);
     }
 
     fclose(fw);
+}
+
+int backwardscompar(strinfo* str1, strinfo* str2){
+    char first, second;
+    int result = 0;
+    for(int i = str1->length, j = str2->length; i >= 0 && j >= 0; i--, j--){
+        first = str1->adress[i], second = str2->adress[j];
+        
+        while(!isalpha(first)){
+            i--;
+            first = str1->adress[i];
+        }
+        
+        while(!isalpha(second)) {
+            j--;
+            second = str2->adress[j];
+        }
+
+        if((int)(first) < (int)(second)){ 
+            result = -1;
+            break;
+        }
+        else if((int)(first) > (int)(second)){
+            result = 1;
+            break;
+        }
+    }
+  return result;
 }
